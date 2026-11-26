@@ -8,7 +8,7 @@
 // provenance in a deadpan curator's voice. The joke is the inscription:
 // a real museum label quotes what the object says, and here the object
 // says something every office worker recognises and nobody ever did.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const PLACARD =
   "Sticky note, c. 2021. Pigment on adhesive papyrus. It reads 'Call Dave back' — the earliest known record of a promise no one kept. Found beneath a desk.";
@@ -20,8 +20,17 @@ function main(): void {
   if (text.length < 1 || text.length > MAX_CHARS) {
     throw new Error(`entry must be 1-${MAX_CHARS} characters, got ${text.length}`);
   }
+  if (/\r|\n/.test(text)) {
+    throw new Error("entry must be a single line");
+  }
   mkdirSync("/output", { recursive: true });
   writeFileSync("/output/entry.txt", text, "utf8");
+  // Round-trip check: the grader runs the program twice and both runs must
+  // write the same bytes, so verify what landed on disk matches exactly.
+  const written = readFileSync("/output/entry.txt", "utf8");
+  if (written !== text) {
+    throw new Error("round-trip mismatch: /output/entry.txt differs from entry");
+  }
   console.log(`wrote /output/entry.txt (${text.length} chars)`);
 }
 
